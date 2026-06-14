@@ -1,4 +1,4 @@
-# 🏭 Eureka DFM 3.0 — AI-Powered Design for Manufacturability
+#Eureka DFM 3.0 — AI-Powered Design for Manufacturability
 
 > **Eureka DFM** is an intelligent CAD validation system that catches manufacturability issues *before* they hit the shop floor. It combines a Graph Neural Network (GNN) for geometric risk detection with a rule-based engine and Google Gemini AI for plain-English explanations.
 

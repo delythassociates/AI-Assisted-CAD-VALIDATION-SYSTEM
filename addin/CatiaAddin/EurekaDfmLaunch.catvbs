@@ -1,0 +1,7 @@
+Language="VBSCRIPT"
+
+Sub CATMain()
+    Set shell = CreateObject("WScript.Shell")
+    ' Launch the release build of the CATIA connector
+    shell.Run """F:\Varroc\addin\CatiaAddin\bin\Release\EurekaCatiaConnector.exe"""
+End Sub

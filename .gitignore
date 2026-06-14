@@ -1,0 +1,93 @@
+# ──────────────────────────────────────────────
+# Eureka DFM 3.0 — .gitignore
+# ──────────────────────────────────────────────
+
+# ── Python ─────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+*.whl
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# ── Environment / Secrets ──────────────────────
+.env
+*.env.local
+
+# ── IDE / Editor ───────────────────────────────
+.cursor/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── C# / .NET Build Artifacts ──────────────────
+addin/EurekaAddin/bin/
+addin/EurekaAddin/obj/
+addin/CatiaAddin/bin/
+addin/CatiaAddin/obj/
+*.dll
+*.exe
+*.pdb
+*.user
+*.suo
+*.cache
+
+# ── Logs & Databases ──────────────────────────
+*.log
+*.db
+server.log
+
+# ── Training Data (large files) ────────────────
+data/abc_raw/
+data/processed/
+data/synthetic/
+data/feedback/
+data/labels/
+data/*.log
+
+# ── Large model backups & stale files ──────────
+*.bak
+*.stale*
+data/models/calibration_curve.png
+data/models/hybrid_feature_importance.png
+data/models/gnn_model.pt
+data/models/gnn_model_real.pt
+data/models/gnn_focal_10d.pt
+data/models/calibration_focal_10d.json
+data/models/gnn_model_real_cpu.pt.bak
+data/models/gnn_model_real.onnx.stale8d
+
+# ── Test artifacts ─────────────────────────────
+test_*.pdf
+test_bypass.onnx
+test_deser.cs
+test_deser.exe
+rendered_page_*.png
+Newtonsoft.Json.dll
+
+# ── Build / Registration logs ──────────────────
+build_log.txt
+reg_log.txt
+register_log.txt
+
+# ── PowerShell registry scripts (machine-specific)
+_clean_clsid.ps1
+_fix_registry.ps1
+_register_admin.ps1
+register_addin.ps1
+run_build.bat
+run_register_addin.bat

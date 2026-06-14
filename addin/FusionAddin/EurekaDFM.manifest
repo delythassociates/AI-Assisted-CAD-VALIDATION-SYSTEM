@@ -1,0 +1,13 @@
+{
+	"autodeskProduct":	"Fusion360",
+	"type":	"addin",
+	"id":	"88fca4c7-12db-424a-9b1d-cbe12c6a0c5c",
+	"author":	"Antigravity DFM Team",
+	"description":	{
+		"":	"Eureka DFM 3.0 Universal CAD Validator Add-in"
+	},
+	"version":	"3.0",
+	"runOnStartup":	false,
+	"supportedOS":	"windows|mac",
+	"editEnabled":	true
+}

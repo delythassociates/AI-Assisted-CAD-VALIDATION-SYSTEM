@@ -1,0 +1,23 @@
+{
+  "A": 6.635532833496509,
+  "B": -3.5031537535085593,
+  "version": "v2.0-hybrid-xgb",
+  "gnn_architecture": "2-layer",
+  "gnn_node_in": 14,
+  "embed_dim": 128,
+  "feature_dim": 142,
+  "xgb_params": {
+    "subsample": 0.7,
+    "scale_pos_weight": 1.2,
+    "n_estimators": 300,
+    "max_depth": 4,
+    "learning_rate": 0.01,
+    "colsample_bytree": 0.7
+  },
+  "test_auc": 0.6189995719439858,
+  "test_f1": 0.7434842249657064,
+  "dims_dropped": [
+    5,
+    7
+  ]
+}

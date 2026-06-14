@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eureka DFM 3.0</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg-main: #1E2227;
+    --bg-surface: #272B33;
+    --bg-raised: #2F3540;
+    --border: #3A3F4B;
+    --critical: #E05252;
+    --warning: #E09A3A;
+    --info: #4A9EE0;
+    --good: #52C47A;
+    --text-primary: #E8EAF0;
+    --text-secondary: #8B919E;
+    --accent: #4A80E0;
+    --accent-hover: #5A90F0;
+    --radius: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-main);
+    color: var(--text-primary);
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  .container { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ── Header ── */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; background: var(--bg-surface);
+    border-radius: var(--radius); border: 1px solid var(--border);
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: linear-gradient(135deg, var(--accent), #6C5CE7);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; color: #fff;
+  }
+  .header-title { font-weight: 700; font-size: 15px; letter-spacing: -0.3px; }
+  .header-sub { font-size: 11px; color: var(--text-secondary); }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--critical); transition: background 0.3s;
+  }
+  .status-dot.connected { background: var(--good); }
+  .status-label { font-size: 10px; color: var(--text-secondary); text-align: right; }
+  .validation-time { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* ── Card ── */
+  .card {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px;
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px; cursor: pointer; user-select: none;
+  }
+  .card-title { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); }
+  .card-chevron { font-size: 10px; color: var(--text-secondary); transition: transform 0.2s; }
+  .card-chevron.collapsed { transform: rotate(-90deg); }
+
+  /* ── Config Section ── */
+  .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .config-full { grid-column: 1 / -1; }
+  .field-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 3px; }
+  select, input[type="number"] {
+    width: 100%; padding: 7px 10px; background: var(--bg-raised);
+    border: 1px solid var(--border); border-radius: 5px;
+    color: var(--text-primary); font-size: 12px; font-family: inherit;
+    outline: none; transition: border-color 0.2s;
+  }
+  select:focus, input:focus { border-color: var(--accent); }
+  select option { background: var(--bg-raised); color: var(--text-primary); }
+
+  /* ── Buttons ── */
+  .btn-row { display: flex; gap: 8px; }
+  .btn {
+    flex: 1; padding: 9px 12px; border: none; border-radius: 6px;
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+  .btn-primary:disabled { background: var(--bg-raised); color: var(--text-secondary); cursor: not-allowed; transform: none; }
+  .btn-secondary { background: var(--bg-raised); color: var(--text-secondary); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border); color: var(--text-primary); }
+
+  /* ── Progress Stepper ── */
+  .stepper { display: flex; align-items: center; gap: 0; padding: 6px 0; }
+  .step {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    position: relative;
+  }
+  .step-dot {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--bg-raised); border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; transition: all 0.3s;
+    position: relative; z-index: 1;
+  }
+  .step.active .step-dot { border-color: var(--accent); background: var(--accent); color: #fff; animation: pulse 1.5s infinite; }
+  .step.done .step-dot { border-color: var(--good); background: var(--good); color: #fff; }
+  .step.error .step-dot { border-color: var(--critical); background: var(--critical); color: #fff; }
+  .step-label { font-size: 9px; color: var(--text-secondary); text-align: center; }
+  .step.active .step-label { color: var(--accent); }
+  .step.done .step-label { color: var(--good); }
+  .step-line {
+    position: absolute; top: 10px; left: 50%; width: 100%; height: 2px;
+    background: var(--border); z-index: 0;
+  }
+  .step:last-child .step-line { display: none; }
+  .step.done .step-line { background: var(--good); }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(74,128,224,0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(74,128,224,0); }
+  }
+
+  /* ── Score Arc ── */
+  .score-container { display: flex; flex-direction: column; align-items: center; padding: 10px 0; }
+  .score-arc-wrap { position: relative; width: 140px; height: 80px; margin-bottom: 4px; }
+  .score-arc-wrap svg { width: 140px; height: 80px; }
+  .score-value {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    font-size: 28px; font-weight: 700; letter-spacing: -1px;
+  }
+  .score-label { font-size: 11px; color: var(--text-secondary); text-align: center; }
+  .risk-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.5px; margin-top: 6px;
+  }
+  .risk-high { background: rgba(224,82,82,0.15); color: var(--critical); }
+  .risk-medium { background: rgba(224,154,58,0.15); color: var(--warning); }
+  .risk-low { background: rgba(82,196,122,0.15); color: var(--good); }
+
+  /* ── Summary Chips ── */
+  .summary-row { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
+  .chip {
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;
+  }
+  .chip-crit { background: rgba(224,82,82,0.12); color: var(--critical); }
+  .chip-warn { background: rgba(224,154,58,0.12); color: var(--warning); }
+  .chip-info { background: rgba(74,158,224,0.12); color: var(--info); }
+  .chip-pass { background: rgba(82,196,122,0.12); color: var(--good); }
+  .chip-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .chip-crit .chip-dot { background: var(--critical); }
+  .chip-warn .chip-dot { background: var(--warning); }
+  .chip-info .chip-dot { background: var(--info); }
+  .chip-pass .chip-dot { background: var(--good); }
+
+  /* ── Review Banner ── */
+  .review-banner {
+    display: none; padding: 10px 14px; border-radius: var(--radius);
+    background: rgba(224,154,58,0.1); border: 1px solid rgba(224,154,58,0.3);
+    text-align: center;
+  }
+  .review-banner.visible { display: block; }
+  .review-text { font-size: 11px; color: var(--warning); font-weight: 600; }
+  .gemini-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    background: rgba(74,128,224,0.15); color: var(--accent);
+    font-size: 9px; font-weight: 700; margin-top: 4px;
+  }
+
+  /* ── AI Analysis ── */
+  .ai-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .ai-label { font-size: 11px; color: var(--text-secondary); }
+  .ai-value { font-size: 13px; font-weight: 600; }
+  .progress-bar-bg {
+    width: 100%; height: 6px; background: var(--bg-raised);
+    border-radius: 3px; overflow: hidden; margin: 6px 0;
+  }
+  .progress-bar-fill {
+    height: 100%; border-radius: 3px; transition: width 0.5s ease-out;
+    background: linear-gradient(90deg, var(--good), var(--warning), var(--critical));
+    min-width: 3px; /* always visible even at 0% */
+  }
+
+  /* ── Feedback ── */
+  .feedback-row { display: flex; gap: 6px; margin-top: 8px; }
+  .feedback-btn {
+    flex: 1; padding: 6px 8px; border-radius: 5px; font-size: 11px;
+    font-weight: 600; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg-raised); color: var(--text-secondary);
+    font-family: inherit; transition: all 0.2s;
+  }
+  .feedback-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+  .feedback-btn.accurate:hover { border-color: var(--good); color: var(--good); }
+  .feedback-btn.override:hover { border-color: var(--warning); color: var(--warning); }
+  .feedback-status { font-size: 10px; color: var(--good); margin-top: 4px; text-align: center; display: none; }
+
+  /* ── Heatmap ── */
+  .heatmap-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .heatmap-cell {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 8px 4px; border-radius: 6px; background: var(--bg-raised);
+    border: 1px solid var(--border);
+  }
+  .heatmap-count { font-size: 18px; font-weight: 700; }
+  .heatmap-label { font-size: 9px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.3px; }
+  .heatmap-cell.crit .heatmap-count { color: var(--critical); }
+  .heatmap-cell.risk .heatmap-count { color: var(--warning); }
+  .heatmap-cell.watch .heatmap-count { color: var(--info); }
+  .heatmap-cell.good .heatmap-count { color: var(--good); }
+
+  /* ── Violations List ── */
+  .violations-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+  }
+  .violation-count-badge {
+    padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700;
+    background: rgba(224,82,82,0.12); color: var(--critical);
+  }
+  .violation-item {
+    padding: 10px 12px; margin-bottom: 6px; border-radius: 6px;
+    background: var(--bg-raised); border: 1px solid var(--border);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .violation-item:hover { border-color: var(--accent); transform: translateX(2px); }
+  .violation-item.selected { border-color: var(--accent); background: rgba(74,128,224,0.08); }
+  .vi-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .vi-rule { font-weight: 600; font-size: 12px; }
+  .vi-severity {
+    padding: 2px 6px; border-radius: 3px; font-size: 9px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .vi-severity.CRITICAL { background: rgba(224,82,82,0.15); color: var(--critical); }
+  .vi-severity.WARNING { background: rgba(224,154,58,0.15); color: var(--warning); }
+  .vi-severity.INFO { background: rgba(74,158,224,0.15); color: var(--info); }
+  .vi-message { font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
+  .vi-dims { display: flex; gap: 12px; }
+  .vi-dim {
+    display: flex; flex-direction: column; padding: 4px 8px;
+    background: var(--bg-main); border-radius: 4px; min-width: 70px;
+  }
+  .vi-dim-label { font-size: 9px; color: var(--text-secondary); text-transform: uppercase; }
+  .vi-dim-val { font-size: 13px; font-weight: 700; }
+  .vi-dim-val.measured { color: var(--critical); }
+  .vi-dim-val.required { color: var(--good); }
+  .vi-fix {
+    margin-top: 6px; padding: 6px 8px; background: rgba(74,128,224,0.06);
+    border-radius: 4px; font-size: 10px; color: var(--info);
+    border-left: 2px solid var(--info);
+  }
+  .vi-faces { font-size: 10px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* ── Post-validation Controls ── */
+  .post-controls { display: none; }
+  .post-controls.visible { display: block; }
+
+  /* ── Hidden state ── */
+  .hidden { display: none !important; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg-main); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+  /* ── Narrative ── */
+  .narrative-text {
+    font-size: 11px; color: var(--text-secondary); line-height: 1.6;
+    padding: 8px; background: var(--bg-raised); border-radius: 4px;
+    max-height: 120px; overflow-y: auto; margin-top: 8px;
+    white-space: pre-wrap;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">E</div>
+      <div>
+        <div class="header-title">Eureka DFM 3.0</div>
+        <div class="header-sub">Fusion 360 Connector</div>
+      </div>
+    </div>
+    <div style="text-align: right">
+      <div style="display: flex; align-items: center; gap: 6px; justify-content: flex-end;">
+        <div id="statusDot" class="status-dot"></div>
+        <div id="statusLabel" class="status-label">Disconnected</div>
+      </div>
+      <div id="validationTime" class="validation-time"></div>
+    </div>
+  </div>
+
+  <!-- Config -->
+  <div class="card" id="configCard">
+    <div class="card-header" onclick="toggleCard('configBody', 'configChevron')">
+      <span class="card-title">⚙ Configuration</span>
+      <span id="configChevron" class="card-chevron">▼</span>
+    </div>
+    <div id="configBody">
+      <div class="config-grid">
+        <div>
+          <div class="field-label">Process</div>
+          <select id="selProcess">
+            <option value="injection_moulding">Injection Moulding</option>
+            <option value="die_cast_al">Die Casting (Al)</option>
+            <option value="die_cast_zn">Die Casting (Zn)</option>
+            <option value="die_cast_mg">Die Casting (Mg)</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-label">Material</div>
+          <select id="selMaterial">
+            <option value="ABS">ABS</option>
+            <option value="PP">PP</option>
+            <option value="PA6">PA6</option>
+            <option value="PC">PC</option>
+            <option value="POM">POM</option>
+            <option value="PMMA">PMMA</option>
+            <option value="Al_A380">Al A380</option>
+            <option value="Zn_Zamak3">Zn Zamak 3</option>
+            <option value="Mg_AZ91D">Mg AZ91D</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-label">Nom. Wall (mm)</div>
+          <input type="number" id="txtWall" value="1.5" min="0.1" max="20" step="0.1">
+        </div>
+        <div>
+          <div class="field-label">Pull Direction</div>
+          <select id="selPull">
+            <option value="auto">Auto-detect</option>
+            <option value="+Z">+Z (Top)</option>
+            <option value="-Z">-Z (Bottom)</option>
+            <option value="+X">+X</option>
+            <option value="-X">-X</option>
+            <option value="+Y">+Y</option>
+            <option value="-Y">-Y</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top: 10px;">
+        <button class="btn btn-primary" id="btnValidate" onclick="doValidate()">▶ Validate</button>
+        <button class="btn btn-secondary" id="btnClear" onclick="doClear()">✕ Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress Stepper -->
+  <div class="card hidden" id="stepperCard">
+    <div class="stepper">
+      <div class="step" id="step0">
+        <div class="step-dot">1</div>
+        <div class="step-label">Extract</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step" id="step1">
+        <div class="step-dot">2</div>
+        <div class="step-label">Rules</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step" id="step2">
+        <div class="step-dot">3</div>
+        <div class="step-label">GNN</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step" id="step3">
+        <div class="step-dot">✓</div>
+        <div class="step-label">Done</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Score Card -->
+  <div class="card hidden" id="scoreCard">
+    <div class="score-container">
+      <div class="score-arc-wrap">
+        <svg viewBox="0 0 140 80">
+          <path d="M 10 75 A 60 60 0 0 1 130 75" fill="none" stroke="#2F3540" stroke-width="8" stroke-linecap="round"/>
+          <path id="scoreArc" d="M 10 75 A 60 60 0 0 1 130 75" fill="none" stroke="#52C47A" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 188.5"/>
+        </svg>
+        <div id="scoreValue" class="score-value" style="color: var(--good);">--</div>
+      </div>
+      <div class="score-label">Manufacturability Score</div>
+      <div id="riskBadge" class="risk-badge risk-low">LOW RISK</div>
+    </div>
+    <div class="summary-row">
+      <span class="chip chip-crit"><span class="chip-dot"></span><span id="chipCrit">0</span> Critical</span>
+      <span class="chip chip-warn"><span class="chip-dot"></span><span id="chipWarn">0</span> Warning</span>
+      <span class="chip chip-info"><span class="chip-dot"></span><span id="chipInfo">0</span> Info</span>
+      <span class="chip chip-pass"><span class="chip-dot"></span><span id="chipPass">0</span> Passed</span>
+    </div>
+  </div>
+
+  <!-- Review Banner -->
+  <div class="review-banner" id="reviewBanner">
+    <div class="review-text">⚠ Engineer Review Required</div>
+    <div class="gemini-badge" id="geminiBadge">✦ GEMINI ENRICHED</div>
+  </div>
+
+  <!-- AI Analysis -->
+  <div class="card hidden" id="aiCard">
+    <div class="card-header" onclick="toggleCard('aiBody', 'aiChevron')">
+      <span class="card-title">🧠 AI Analysis</span>
+      <span id="aiChevron" class="card-chevron">▼</span>
+    </div>
+    <div id="aiBody">
+      <div class="ai-row">
+        <span class="ai-label">GNN Risk Score</span>
+        <span class="ai-value" id="aiRiskVal">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="aiRiskBar" style="width: 0%"></div>
+      </div>
+      <div class="ai-row">
+        <span class="ai-label">Mode</span>
+        <span class="ai-value" id="aiMode">GNN</span>
+      </div>
+      <div class="ai-row">
+        <span class="ai-label">Confidence</span>
+        <span class="ai-value" id="aiConf">--</span>
+      </div>
+      <div id="narrativeBox" class="hidden">
+        <div class="card-title" style="margin-top: 8px;">Gemini Narrative</div>
+        <div class="narrative-text" id="narrativeText"></div>
+      </div>
+      <div class="feedback-row">
+        <button class="feedback-btn accurate" onclick="sendFeedback(true)">✓ Accurate</button>
+        <button class="feedback-btn override" onclick="sendFeedback(false)">✗ Override</button>
+      </div>
+      <div class="feedback-status" id="feedbackStatus"></div>
+    </div>
+  </div>
+
+  <!-- Face Heatmap -->
+  <div class="card hidden" id="heatmapCard">
+    <div class="card-header">
+      <span class="card-title">🔥 Face Health</span>
+    </div>
+    <div class="heatmap-grid">
+      <div class="heatmap-cell crit"><div class="heatmap-count" id="hmCrit">0</div><div class="heatmap-label">Critical</div></div>
+      <div class="heatmap-cell risk"><div class="heatmap-count" id="hmRisk">0</div><div class="heatmap-label">At Risk</div></div>
+      <div class="heatmap-cell watch"><div class="heatmap-count" id="hmWatch">0</div><div class="heatmap-label">Watch</div></div>
+      <div class="heatmap-cell good"><div class="heatmap-count" id="hmGood">0</div><div class="heatmap-label">Good</div></div>
+    </div>
+  </div>
+
+  <!-- Post-Validation Controls -->
+  <div class="card post-controls" id="postControls">
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="doExport()">📄 Export Report</button>
+    </div>
+  </div>
+
+  <!-- Violations List -->
+  <div class="card hidden" id="violationsCard">
+    <div class="violations-header">
+      <span class="card-title">⚠ Violations</span>
+      <span class="violation-count-badge" id="violationCount">0</span>
+    </div>
+    <div id="violationsList"></div>
+  </div>
+
+</div>
+
+<script>
+  // ── State ──
+  let currentResult = null;
+  let selectedViolationIdx = -1;
+
+  // ── Toggle collapsible cards ──
+  function toggleCard(bodyId, chevronId) {
+    const body = document.getElementById(bodyId);
+    const chevron = document.getElementById(chevronId);
+    if (body.style.display === 'none') {
+      body.style.display = '';
+      chevron.classList.remove('collapsed');
+    } else {
+      body.style.display = 'none';
+      chevron.classList.add('collapsed');
+    }
+  }
+
+  // ── Send data to Python add-in ──
+  function sendToAddin(action, data) {
+    try {
+      const payload = JSON.stringify(data || {});
+      adsk.fusionSendData(action, payload);
+    } catch (e) {
+      console.log('sendToAddin error:', e);
+    }
+  }
+
+  // ── Actions ──
+  function doValidate() {
+    const btn = document.getElementById('btnValidate');
+    btn.disabled = true;
+    btn.textContent = '⏳ Validating...';
+
+    sendToAddin('validate', {
+      process: document.getElementById('selProcess').value,
+      material: document.getElementById('selMaterial').value,
+      nominal_wall_mm: parseFloat(document.getElementById('txtWall').value) || 1.5,
+      pull_direction: document.getElementById('selPull').value
+    });
+  }
+
+  function doClear() {
+    sendToAddin('clear', {});
+    hideResults();
+  }
+
+  function doExport() {
+    sendToAddin('export_report', {});
+  }
+
+  function sendFeedback(isAccurate) {
+    sendToAddin('feedback', { is_accurate: isAccurate });
+  }
+
+  function highlightFace(violationIdx) {
+    const items = document.querySelectorAll('.violation-item');
+    items.forEach((el, i) => {
+      el.classList.toggle('selected', i === violationIdx);
+    });
+
+    if (selectedViolationIdx === violationIdx) {
+      selectedViolationIdx = -1;
+      sendToAddin('clear_highlight', {});
+      items.forEach(el => el.classList.remove('selected'));
+      return;
+    }
+
+    selectedViolationIdx = violationIdx;
+    if (currentResult && currentResult.violations && currentResult.violations[violationIdx]) {
+      const v = currentResult.violations[violationIdx];
+      sendToAddin('highlight_face', {
+        face_ids: v.face_ids || [],
+        violation: v
+      });
+    }
+  }
+
+  // ── Hide results sections ──
+  function hideResults() {
+    ['stepperCard', 'scoreCard', 'aiCard', 'heatmapCard', 'violationsCard'].forEach(id => {
+      document.getElementById(id).classList.add('hidden');
+    });
+    document.getElementById('reviewBanner').classList.remove('visible');
+    document.getElementById('postControls').classList.remove('visible');
+    document.getElementById('validationTime').textContent = '';
+
+    const btn = document.getElementById('btnValidate');
+    btn.disabled = false;
+    btn.textContent = '▶ Validate';
+    currentResult = null;
+    selectedViolationIdx = -1;
+  }
+
+  // ── Update progress stepper ──
+  function setProgress(stage) {
+    const card = document.getElementById('stepperCard');
+    card.classList.remove('hidden');
+
+    const stages = { extracting: 0, rules: 1, gnn: 2, done: 3, error: -1 };
+    const stageIdx = stages[stage] !== undefined ? stages[stage] : -1;
+
+    for (let i = 0; i < 4; i++) {
+      const step = document.getElementById('step' + i);
+      step.classList.remove('active', 'done', 'error');
+      if (stageIdx === -1) {
+        step.classList.add('error');
+      } else if (i < stageIdx) {
+        step.classList.add('done');
+      } else if (i === stageIdx) {
+        step.classList.add(stageIdx === 3 ? 'done' : 'active');
+      }
+    }
+
+    if (stageIdx === -1) {
+      const btn = document.getElementById('btnValidate');
+      btn.disabled = false;
+      btn.textContent = '▶ Validate';
+    }
+  }
+
+  // ── Render validation results ──
+  function loadResults(result) {
+    currentResult = result;
+
+    // Score
+    const score = result.overall_manufacturability_score || 0;
+    const scoreEl = document.getElementById('scoreValue');
+    scoreEl.textContent = score;
+    const scoreColor = score < 50 ? 'var(--critical)' : score < 80 ? 'var(--warning)' : 'var(--good)';
+    scoreEl.style.color = scoreColor;
+
+    // Score arc (188.5 is approx semicircle perimeter)
+    const arcLen = (score / 100) * 188.5;
+    document.getElementById('scoreArc').setAttribute('stroke-dasharray', arcLen + ' 188.5');
+    document.getElementById('scoreArc').setAttribute('stroke', score < 50 ? '#E05252' : score < 80 ? '#E09A3A' : '#52C47A');
+
+    // Risk badge
+    const badge = document.getElementById('riskBadge');
+    badge.className = 'risk-badge';
+    if (score < 50) { badge.classList.add('risk-high'); badge.textContent = 'HIGH RISK'; }
+    else if (score < 80) { badge.classList.add('risk-medium'); badge.textContent = 'MEDIUM RISK'; }
+    else { badge.classList.add('risk-low'); badge.textContent = 'LOW RISK'; }
+
+    // Summary chips
+    let crit = 0, warn = 0, info = 0;
+    (result.violations || []).forEach(v => {
+      const s = (v.severity || '').toUpperCase();
+      if (s === 'CRITICAL') crit++;
+      else if (s === 'WARNING') warn++;
+      else info++;
+    });
+    document.getElementById('chipCrit').textContent = crit;
+    document.getElementById('chipWarn').textContent = warn;
+    document.getElementById('chipInfo').textContent = info;
+    document.getElementById('chipPass').textContent = (result.passed_checks || []).length;
+
+    // Review banner
+    const reviewEl = document.getElementById('reviewBanner');
+    if (result.engineer_review_required) reviewEl.classList.add('visible');
+    else reviewEl.classList.remove('visible');
+
+    const geminiBadge = document.getElementById('geminiBadge');
+    geminiBadge.style.display = result.gemini_enriched ? 'inline-block' : 'none';
+
+    // AI Analysis — show decimal precision for low GNN scores
+    const rawRisk = result.gnn_risk_score || 0;
+    const riskPct = rawRisk < 0.01 ? 0 : (rawRisk * 100);
+    const riskDisplay = riskPct < 1 ? riskPct.toFixed(1) : Math.round(riskPct);
+    document.getElementById('aiRiskVal').textContent = riskDisplay + '%';
+    // Ensure bar is visible: minimum 3% width if score > 0
+    const barWidth = rawRisk > 0 ? Math.max(3, riskPct) : 0;
+    document.getElementById('aiRiskBar').style.width = barWidth + '%';
+    document.getElementById('aiConf').textContent = Math.round((result.confidence || 0) * 100) + '%';
+
+    // Narrative
+    if (result.gemini_narrative) {
+      document.getElementById('narrativeBox').classList.remove('hidden');
+      document.getElementById('narrativeText').textContent = result.gemini_narrative;
+    } else {
+      document.getElementById('narrativeBox').classList.add('hidden');
+    }
+
+    // Heatmap
+    const fh = result.face_health || {};
+    document.getElementById('hmCrit').textContent = fh.critical || 0;
+    document.getElementById('hmRisk').textContent = fh.at_risk || 0;
+    document.getElementById('hmWatch').textContent = fh.watch || 0;
+    document.getElementById('hmGood').textContent = fh.clean || 0;
+
+    // Violations
+    const vList = document.getElementById('violationsList');
+    vList.innerHTML = '';
+    document.getElementById('violationCount').textContent = (result.violations || []).length;
+
+    (result.violations || []).forEach((v, idx) => {
+      const item = document.createElement('div');
+      item.className = 'violation-item';
+      item.onclick = () => highlightFace(idx);
+
+      const sev = (v.severity || 'INFO').toUpperCase();
+      const message = v.plain_english || v.description || '';
+
+      const ruleId = v.rule_id || '';
+      const isAngle = ruleId.toLowerCase().includes('draft') || ruleId.toLowerCase().includes('angle') || ruleId.toLowerCase().includes('undercut');
+      const unit = isAngle ? '\u00B0' : 'mm';
+
+      // Extract measured value: prefer Gemini-enriched, then parse raw string
+      let measuredVal = null;
+      if (v.current_value_mm !== null && v.current_value_mm !== undefined) {
+        measuredVal = v.current_value_mm;
+      } else if (v.measured_value) {
+        measuredVal = extractNumberFromDFM(v.measured_value, isAngle);
+      }
+
+      // Extract required value
+      let requiredVal = null;
+      if (v.minimum_required_mm !== null && v.minimum_required_mm !== undefined) {
+        requiredVal = v.minimum_required_mm;
+      } else if (v.required_value) {
+        requiredVal = extractNumberFromDFM(v.required_value, isAngle);
+      }
+
+      // Build dimension display — always show measured → required explicitly, and fallback to raw strings if non-numeric
+      let dimsHtml = '';
+      if (v.measured_value || v.required_value || measuredVal !== null || requiredVal !== null) {
+        dimsHtml = '<div class="vi-dims" style="display:flex; flex-wrap:wrap; gap:8px;">';
+
+        // Measured box
+        const measDisplay = measuredVal !== null ? formatNum(measuredVal) + unit : (v.measured_value || '--');
+        const measStyle = measuredVal !== null ? '' : 'font-size: 10px; font-weight: 500; white-space: normal; line-height: 1.2; word-break: break-word;';
+        dimsHtml += `<div class="vi-dim" style="flex:1; min-width:70px; height:auto;"><div class="vi-dim-label">Measured</div>`;
+        dimsHtml += `<div class="vi-dim-val measured" style="${measStyle}">${escapeHtml(measDisplay)}</div></div>`;
+
+        // Arrow
+        dimsHtml += '<div class="vi-dim" style="min-width:auto;padding:4px 2px;display:flex;align-items:center;justify-content:center;background:none"><span style="color:var(--text-secondary);font-size:16px">\u2192</span></div>';
+
+        // Required box
+        const reqSign = getRelation(v);
+        const reqDisplay = requiredVal !== null ? reqSign + ' ' + formatNum(requiredVal) + unit : (v.required_value || '--');
+        const reqStyle = requiredVal !== null ? '' : 'font-size: 10px; font-weight: 500; white-space: normal; line-height: 1.2; word-break: break-word;';
+        dimsHtml += `<div class="vi-dim" style="flex:1; min-width:70px; height:auto;"><div class="vi-dim-label">Required</div>`;
+        dimsHtml += `<div class="vi-dim-val required" style="${reqStyle}">${escapeHtml(reqDisplay)}</div></div>`;
+
+        // Optimal box (if available)
+        if (v.optimal_value_mm !== null && v.optimal_value_mm !== undefined) {
+          dimsHtml += `<div class="vi-dim" style="flex: 0 0 auto;"><div class="vi-dim-label">Optimal</div><div class="vi-dim-val" style="color:var(--accent)">${formatNum(v.optimal_value_mm)}${unit}</div></div>`;
+        }
+        dimsHtml += '</div>';
+
+        // Fix delta calculation for numeric values (matches C# delta math)
+        if (measuredVal !== null && requiredVal !== null) {
+          const delta = reqSign === '\u2264' ? measuredVal - requiredVal : requiredVal - measuredVal;
+          if (delta > 0) {
+            const sign = reqSign === '\u2264' ? '-' : '+';
+            dimsHtml += `<div style="font-size: 10px; font-weight: 600; color: var(--warning); margin-top: 4px; padding-left: 2px;">Fix delta: ${sign}${formatNum(delta)}${unit} needed</div>`;
+          }
+        }
+      }
+
+      const fixText = v.fix_instruction || v.fix_suggestion || '';
+      const fixHtml = fixText ? `<div class="vi-fix">💡 ${escapeHtml(fixText)}</div>` : '';
+
+      const faceIds = (v.face_ids || []).join(', ');
+      const facesHtml = faceIds ? `<div class="vi-faces">Faces: ${escapeHtml(faceIds)}</div>` : '';
+
+      item.innerHTML = `
+        <div class="vi-top">
+          <span class="vi-rule">${escapeHtml(ruleId)}</span>
+          <span class="vi-severity ${sev}">${sev}</span>
+        </div>
+        <div class="vi-message">${escapeHtml(message)}</div>
+        ${dimsHtml}
+        ${fixHtml}
+        ${facesHtml}
+      `;
+      vList.appendChild(item);
+    });
+
+    // Show all result sections
+    ['scoreCard', 'aiCard', 'heatmapCard', 'violationsCard'].forEach(id => {
+      document.getElementById(id).classList.remove('hidden');
+    });
+    document.getElementById('postControls').classList.add('visible');
+
+    setProgress('done');
+    const btn = document.getElementById('btnValidate');
+    btn.disabled = false;
+    btn.textContent = '▶ Validate';
+  }
+
+  // ── Helpers ──
+  function getRelation(v) {
+    if (!v.required_value) return '\u2265'; // ≥
+    const r = v.required_value.toLowerCase();
+    if (r.includes('<=') || r.includes('\u2264') || r.includes('must not') || r.includes('no undercut')) {
+      return '\u2264'; // ≤
+    }
+    return '\u2265'; // ≥
+  }
+
+  function extractNumber(str) {
+    if (str === null || str === undefined) return null;
+    if (typeof str === 'number') return str;
+    const match = String(str).match(/[-+]?\d*\.?\d+/);
+    return match ? parseFloat(match[0]) : null;
+  }
+
+  /**
+   * Smarter extraction for DFM backend strings like:
+   *   "180.0deg from pull" -> 180.0
+   *   "<=90deg (no undercut)" -> 90.0
+   *   "3.50mm (1.8x nominal)" -> 3.50
+   *   "90deg from parting plane" -> 90.0
+   *   "Class A face must not sit at parting line" -> null
+   */
+  function extractNumberFromDFM(str, isAngle) {
+    if (str === null || str === undefined) return null;
+    if (typeof str === 'number') return str;
+    const s = String(str);
+    // Try to find a number followed by optional unit (deg, mm, °)
+    const match = s.match(/([<>=!]*\s*)([-+]?\d+\.?\d*)\s*(deg|mm|°)?/i);
+    if (match) return parseFloat(match[2]);
+    // Fallback: any number
+    const fallback = s.match(/[-+]?\d*\.?\d+/);
+    return fallback ? parseFloat(fallback[0]) : null;
+  }
+
+  function formatNum(n) { return n !== null ? Number(n).toFixed(2) : '--'; }
+  function escapeHtml(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Incoming messages from Python ──
+  window.fusionJavaScriptHandler = {
+    handle: function(action, data) {
+      try {
+        const parsed = JSON.parse(data);
+        switch(action) {
+          case 'backend_status':
+            const dot = document.getElementById('statusDot');
+            const label = document.getElementById('statusLabel');
+            if (parsed.connected) {
+              dot.classList.add('connected');
+              label.textContent = 'Connected';
+            } else {
+              dot.classList.remove('connected');
+              label.textContent = 'Disconnected';
+            }
+            break;
+
+          case 'progress':
+            setProgress(parsed.stage);
+            break;
+
+          case 'load_results':
+            loadResults(parsed);
+            break;
+
+          case 'validation_time':
+            document.getElementById('validationTime').textContent = parsed.time_str;
+            break;
+
+          case 'feedback_ok':
+            const fs = document.getElementById('feedbackStatus');
+            fs.style.display = 'block';
+            fs.textContent = parsed.message || 'Feedback recorded!';
+            setTimeout(() => { fs.style.display = 'none'; }, 5000);
+            break;
+
+          case 'feedback_error':
+            const fe = document.getElementById('feedbackStatus');
+            fe.style.display = 'block';
+            fe.style.color = 'var(--critical)';
+            fe.textContent = parsed.message || 'Feedback failed';
+            setTimeout(() => { fe.style.display = 'none'; fe.style.color = 'var(--good)'; }, 5000);
+            break;
+
+          case 'error':
+            setProgress('error');
+            const btnV = document.getElementById('btnValidate');
+            btnV.disabled = false;
+            btnV.textContent = '▶ Validate';
+            break;
+        }
+      } catch (e) {
+        console.log('Handle error:', e);
+      }
+    }
+  };
+</script>
+</body>
+</html>

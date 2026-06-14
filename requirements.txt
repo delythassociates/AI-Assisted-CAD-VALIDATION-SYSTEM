@@ -1,0 +1,35 @@
+# ──────────────────────────────────────────────
+# Eureka DFM 3.0 — Python Dependencies
+# ──────────────────────────────────────────────
+# Install: pip install -r requirements.txt
+# ──────────────────────────────────────────────
+
+# Web Framework
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+python-dotenv>=1.0.0
+
+# Data Validation & Settings
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Database
+sqlalchemy>=2.0.0
+aiosqlite>=0.19.0
+
+# Machine Learning — GNN
+torch>=2.0.0
+torch-geometric>=2.4.0
+
+# Machine Learning — Hybrid (optional)
+xgboost>=2.0.0
+numpy>=1.24.0
+
+# ONNX Runtime (optional, for optimized inference)
+onnxruntime>=1.16.0
+
+# PDF Report Generation
+reportlab>=4.0.0
+
+# HTTP Client (for Gemini API calls)
+requests>=2.31.0
